@@ -13,9 +13,9 @@ El stack que se levanta con Docker es solo el RAG: `postgres` (pgvector), `minio
 ```bash
 cp .env.example .env
 ```
-Editar `.env` y establecer valores reales para `POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `RAG_API_KEY` y `OPENAI_API_KEY`. Para una API OpenAI-compatible local, configurar `OPENAI_BASE_URL` y `OPENAI_MODEL`. **`.env` está en `.gitignore`: no subirlo nunca al repositorio.**
+Editar `.env` y establecer valores reales para `POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `RAG_API_KEY`, `FILES_SIGNING_SECRET` y `OPENAI_API_KEY`. `FILES_PUBLIC_BASE_URL` es el origen público de los enlaces a documentos (en el servidor, `https://piec.ulagos.cl`; ver [docs/api/files.md](docs/api/files.md)). Para una API OpenAI-compatible local, configurar `OPENAI_BASE_URL` y `OPENAI_MODEL`. **`.env` está en `.gitignore`: no subirlo nunca al repositorio.**
 
-Generar una `RAG_API_KEY` aleatoria:
+Generar una `RAG_API_KEY` y un `FILES_SIGNING_SECRET` aleatorios (uno distinto para cada uno):
 ```bash
 openssl rand -hex 32
 ```
@@ -35,14 +35,22 @@ curl http://localhost:8000/health
 Respuesta esperada: `{"status":"ok"}`. La documentación interactiva queda en http://localhost:8000/docs.
 
 ## 3. Subir documentos a MinIO
-Abrir http://localhost:9001 e iniciar sesión con `MINIO_ROOT_USER` y `MINIO_ROOT_PASSWORD` de `.env`. Crear el bucket `documentos` (o el configurado en `MINIO_BUCKET`) y subir PDF, DOCX o TXT con texto extraíble. Los PDF escaneados requieren OCR externo. Límite MVP: 15 MiB por documento, 300 páginas por PDF.
+Por API (crea el bucket si no existe; ver [docs/api/admin-documents.md](docs/api/admin-documents.md)):
+```bash
+curl -X POST http://localhost:8000/admin/documents \
+  -H "X-API-Key: TU_RAG_API_KEY" \
+  -F "file=@./documento.pdf"
+```
+La referencia de todas las rutas está en [docs/api/](docs/api/README.md).
+
+O desde la consola: abrir http://localhost:9001 e iniciar sesión con `MINIO_ROOT_USER` y `MINIO_ROOT_PASSWORD` de `.env`. Crear el bucket `documentos` (o el configurado en `MINIO_BUCKET`) y subir PDF, DOCX o TXT con texto extraíble. Los PDF escaneados requieren OCR externo. Límite MVP: 15 MiB por documento, 300 páginas por PDF.
 
 ## 4. Indexar
 ```bash
 curl -X POST http://localhost:8000/admin/index \
   -H "X-API-Key: TU_RAG_API_KEY"
 ```
-Los documentos modificados se reindexan usando su ETag; los no modificados se omiten. **Limitación:** los documentos eliminados del bucket no se eliminan automáticamente del índice.
+Los documentos modificados se reindexan usando su ETag; los no modificados se omiten, y los que ya no están en el bucket se quitan del índice. Cada ejecución queda en la tabla `indexations`; la última se consulta con `GET /admin/indexations/latest`. Para listar, ver, renombrar y eliminar documentos, ver [docs/api/](docs/api/README.md).
 
 ## 5. Consultar
 ```bash
