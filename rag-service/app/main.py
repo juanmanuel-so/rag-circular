@@ -11,6 +11,7 @@ from sentence_transformers import SentenceTransformer
 from . import documents, files, indexing
 from .config import DATABASE_URL, EMBED_MODEL, MODEL_NAME, State, db, require_key
 from .files import sign_url
+from .version import COMMIT, NAME, VERSION
 
 llm = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"), timeout=45.0)
 
@@ -46,7 +47,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Plataforma Inteligente de Economía Circular - RAG", lifespan=lifespan)
+app = FastAPI(title="Plataforma Inteligente de Economía Circular - RAG", version=VERSION, lifespan=lifespan)
 app.include_router(documents.router)
 app.include_router(indexing.router)
 app.include_router(files.router)
@@ -81,6 +82,12 @@ def source_url(name: str) -> str | None:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/version")
+def version():
+    """Public, no API key: lets bots and monitors read the deployed version."""
+    return {"name": NAME, "version": VERSION, "commit": COMMIT}
 
 
 @app.post("/ask", response_model=AskResponse, dependencies=[Depends(require_key)])

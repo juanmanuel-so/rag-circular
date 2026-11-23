@@ -25,7 +25,10 @@ services:
     volumes:
       - miniodata:/data
   rag:
-    build: ./rag-service
+    build:
+      context: ./rag-service
+      args:
+        GIT_SHA: ${GIT_SHA:-}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rag}:${POSTGRES_PASSWORD}@postgres:5432/rag

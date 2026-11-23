@@ -5,6 +5,10 @@ COPY requirements.txt .
 # no GPU). sentence-transformers then finds torch already installed.
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
  && pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml .
 COPY app ./app
+# Pass the commit with --build-arg GIT_SHA=$(git rev-parse HEAD).
+ARG GIT_SHA=
+ENV GIT_SHA=$GIT_SHA
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

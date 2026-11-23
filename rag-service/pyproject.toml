@@ -1,0 +1,6 @@
+[project]
+name = "rag-circular"
+version = "0.1.0"
+description = "Plataforma Inteligente de Economía Circular - servicio RAG"
+requires-python = ">=3.11"
+# Runtime dependencies stay in requirements.txt (installed by the Dockerfile).
